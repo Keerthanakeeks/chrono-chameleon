@@ -1,0 +1,14 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node.js
+soc/node_modules/
+soc/dist/
+
+# Logs & Environment
+shared_logs/*.log
+shared_logs/*.txt
+shared_logs/*.json
+.env

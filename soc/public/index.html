@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>MTD SOC</title>
+<meta http-equiv="refresh" content="3">
+<style>
+  body { background:#0d1117; color:#e6edf3; font-family:sans-serif; padding:20px; }
+  h2 { color:#58a6ff; } table { width:100%; border-collapse:collapse; background:#161b22; }
+  th, td { padding:8px; border:1px solid #30363d; text-align:left; font-size:14px; }
+  th { background:#21262d; }
+  .red { color:#f85149; } .green { color:#3fb950; }
+</style></head><body>
+<h2>🛡 Chrono-Chameleon SOC Dashboard</h2>
+<table><tr><th>Active Port</th><td id="active" class="green">Loading...</td></tr></table>
+<h2>📡 Container State</h2><table id="containers"></table>
+<h2>🚫 Attacks & Bans</h2><table id="attacks"></table>
+<h2>🔎 Nmap Reverse Recon</h2><table id="recon"></table>
+<script>
+async function refresh() {
+  const s = await (await fetch('/api/state')).json();
+  const real = s.containers.find(c => c.name.startsWith('real_app_'));
+  document.getElementById('active').innerText = real ? real.port : 'Transitioning...';
+  
+  document.getElementById('containers').innerHTML = '<tr><th>Name</th><th>Port</th><th>Status</th></tr>' + 
+    s.containers.map(c => `<tr><td>${c.name}</td><td>${c.port||'—'}</td><td>${c.status}</td></tr>`).join('');
+    
+  document.getElementById('attacks').innerHTML = '<tr><th>IP</th><th>Event</th><th>Port</th><th>Time</th></tr>' + 
+    (s.attacks.map(a => `<tr><td>${a.ip}</td><td class="red">${a.type||'TOUCH'}</td><td>${a.port}</td><td>${(a.time||'').slice(11,19)}</td></tr>`).join('') || '<tr><td colspan=4>No attacks yet</td></tr>');
+    
+  document.getElementById('recon').innerHTML = '<tr><th>Attacker IP</th><th>Open Ports</th><th>Services</th></tr>' + 
+    (s.recon.map(r => `<tr><td>${r.ip}</td><td>${(r.nmap_ports||[]).join(', ')||'stealth'}</td><td>${(r.nmap_services||[]).slice(0,3).join('<br>')}</td></tr>`).join('') || '<tr><td colspan=3>No recon data</td></tr>');
+}
+refresh();
+</script></body></html>

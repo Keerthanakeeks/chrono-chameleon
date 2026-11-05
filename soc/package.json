@@ -1,0 +1,30 @@
+{
+  "name": "chrono-chameleon-soc",
+  "description": "MTD SOC Control Center",
+  "version": "1.0.0",
+  "author": "cyber-pkraaj <admin@cyberpkraaj.local>",
+  "homepage": "https://github.com/cyber-pkraaj",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "electron": "*",
+    "electron-builder": "*"
+  },
+  "build": {
+    "appId": "com.cyberpkraaj.soc",
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
