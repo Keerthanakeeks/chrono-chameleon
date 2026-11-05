@@ -1,0 +1,9 @@
+services:
+  real_app_image:
+    build: ./real_app
+    image: real_app_image
+    command: ["true"]
+  honeypot_image:
+    build: ./honeypot
+    image: honeypot_image
+    command: ["true"]
