@@ -1,29 +1,24 @@
-/**
- * MTD Core App — DUAL MODE (one image, two personalities)
- *   MODE=real → protected application behind the smart proxy
- *   MODE=trap → Mirror Dimension sandbox on vacated ports
- *               - Honey-tokens (/admin-backup etc) → INSTANT ban queue
- *               - Data poisoning (fake user DB)
- *               - Chameleon: Microsoft-IIS/10.0 headers
- */
-const express = require('express');
+﻿const express = require('express');
 const fs = require('fs');
+const path = require('path');
 
 const MODE = process.env.MODE || 'trap';
 const PORT = process.env.PORT || 8000;
-const LOG_PATH = '/shared_logs/attack.log';
-const BAN_QUEUE = '/shared_logs/ban_queue.log';
+const SHARED_DIR = process.env.SHARED_LOGS || (fs.existsSync('/shared_logs') ? '/shared_logs' : path.join(__dirname, '..', 'shared_logs'));
+const LOG_PATH = path.join(SHARED_DIR, 'attack.log');
+const BAN_QUEUE = path.join(SHARED_DIR, 'ban_queue.log');
 
 const app = express();
 app.use(express.json());
 
 function clientIp(req) {
-  return req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const raw = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  return raw.replace(/^::ffff:/, '').replace(/^::1$/, '127.0.0.1');
 }
 
 function logEvent(type, req, extra = {}) {
   const entry = JSON.stringify({
-    type, ip: clientIp(req), port: PORT, mode: MODE,
+    type, ip: clientIp(req), port: Number(PORT), mode: MODE,
     path: req.path, ua: req.headers['user-agent'] || 'unknown',
     time: new Date().toISOString(), ...extra,
   });
@@ -33,13 +28,12 @@ function logEvent(type, req, extra = {}) {
 function triggerBan(req, reason) {
   try {
     fs.appendFileSync(BAN_QUEUE, JSON.stringify({
-      ip: clientIp(req), reason, port: PORT, time: new Date().toISOString(),
+      ip: clientIp(req), reason, port: Number(PORT), time: new Date().toISOString(),
     }) + '\n');
   } catch (e) {}
   logEvent('HONEYTOKEN_HIT', req, { reason });
 }
 
-// ---------- DATA POISONING: fake database ----------
 const POISON_DB = {
   users: [
     { id: 1001, username: 'admin_backup', password: 'Sup3rS3cret!2024', role: 'superadmin' },
@@ -52,7 +46,6 @@ function poisoned(res) {
   res.json({ status: 'ok', source: 'internal-db', data: POISON_DB });
 }
 
-// ==================== TRAP MODE (Mirror Dimension) ====================
 if (MODE === 'trap') {
   app.use((req, res, next) => {
     logEvent('SANDBOX_TOUCH', req);
@@ -78,10 +71,9 @@ if (MODE === 'trap') {
   app.listen(PORT, () => console.log(`[TRAP] Mirror Dimension live on ${PORT} — honey-tokens armed`));
 }
 
-// ==================== REAL MODE (protected app) ====================
 if (MODE === 'real') {
   app.get('/', (req, res) => {
-    res.json({ status: 'success', message: 'Real application is alive', active_port: PORT, mode: MODE });
+    res.json({ status: 'success', message: 'Real application is alive', active_port: Number(PORT), mode: MODE });
   });
   app.listen(PORT, () => console.log(`[REAL] Protected app live on ${PORT}`));
 }

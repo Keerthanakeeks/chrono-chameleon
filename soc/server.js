@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -17,6 +17,12 @@ function readLines(file) {
   } catch { return []; }
 }
 
+function readLocalContainers() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(SHARED, 'containers.json'), 'utf8'));
+  } catch { return []; }
+}
+
 function dockerState(cb) {
   const opts = { socketPath: '/var/run/docker.sock', path: '/containers/json?all=true', method: 'GET' };
   const req = http.request(opts, res => {
@@ -28,11 +34,11 @@ function dockerState(cb) {
           name: c.Names[0].replace('/', ''), status: c.Status,
           port: Object.keys(c.Ports)[0] ? Object.values(c.Ports)[0].PublicPort : null,
         }));
-        cb(containers);
-      } catch { cb([]); }
+        cb(containers.length ? containers : readLocalContainers());
+      } catch { cb(readLocalContainers()); }
     });
   });
-  req.on('error', () => cb([]));
+  req.on('error', () => cb(readLocalContainers()));
   req.end();
 }
 
